@@ -7,8 +7,8 @@ class Game:
         self.game_array = []
 
     def round_winner(self, player1, player2):
-        move_1 = player1.move()
-        move_2 = player2.move()
+        move_1 = player1.move(self)
+        move_2 = player2.move(self)
 
         print(move_1, move_2)
 
@@ -30,7 +30,7 @@ class Game:
         x = []
         y = []
         for _, i in enumerate(self.game_array):
-            value += i
+            value += i[0]
             x.append(_)
             y.append(value)
 
@@ -49,16 +49,30 @@ class Bot:
         pass
 
     def move(self, game):
-        return game.game_array[-1][1]
-        # return random.choice([-1, 1])
+        '''
+        if game.game_array != []:
+            return game.game_array[-1][1]
+        else:
+            return random.choice([-1, 0, 1])
+        '''
+        if game.game_array != []:
+            amount = [0, 0, 0]
+            for winner, move in game.game_array:
+                if winner == 1:
+                    amount[move + 1] += 1
+
+            return (amount.index(max(amount)) - 1)
+        else:
+            return random.choice([-1, 0, 1])
 
 
 class Player:
     def __init__(self, index):
         self.index = index
 
-    def move(self):
-        return random.choice([-1, 1])
+    def move(self, game):
+        # choice = int(input('move: (-1, 0, 1): '))
+        return random.choice([-1, 0, 1])
 
 
 player = Player(1)
@@ -66,7 +80,7 @@ bot = Bot(-1)
 
 game = Game()
 
-for i in range(10):
+for i in range(1000):
     game.round_winner(player, bot)
 
 game.render_games()
