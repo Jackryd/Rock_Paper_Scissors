@@ -58,10 +58,22 @@ def render_winner_text(text, x, y, text_colour=BLACK):
 
 def save_score(algorithm, game=None):
     if game.game_array != []:
-        value = game.render_games()
-        with open('file.csv', 'a', newline='') as file:
+        # value = game.render_games()
+
+        amount_wins = 0
+        amount_games = 0
+
+        for winner, choice in game.game_array:
+            if winner == -1:
+                amount_wins += 1
+            if winner != 0:
+                amount_games += 1
+        
+        percentage = round(100 * amount_wins/amount_games, 2)
+
+        with open('text.csv', 'a', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow([algorithm.__name__, value])
+            writer.writerow([algorithm.__name__, percentage])
 
 
 def main():
@@ -71,7 +83,7 @@ def main():
     player = Player(1)
     player.move = types.MethodType(active_player, player)
     bot = Player(-1)
-    bot.move = types.MethodType(frequency_analysis, bot)
+    bot.move = types.MethodType(daniels_algorithm, bot)
     clock = pygame.time.Clock()
     WIN.blit(bg, (0, 0))
     game_active = False
