@@ -11,17 +11,22 @@ class Game:
         move_1 = player1.move(self)
         move_2 = player2.move(self)
 
+        print(f'You chose {move_1}')
+        print(f'The bot chose {move_2}')
+
         if move_1 == move_2:
             self.game_array.append((0, move_1))
 
-        elif move_1 == 1 and move_2 == -1:
+        elif move_1 == -1 and move_2 == 1:
             self.game_array.append((player1.index, move_1))
-        elif move_1 == -1 and move_2 == 0:
+        elif move_1 == 0 and move_2 == -1:
             self.game_array.append((player1.index, move_1))
-        elif move_1 == 0 and move_2 == 1:
+        elif move_1 == 1 and move_2 == 0:
             self.game_array.append((player1.index, move_1))
         else:
             self.game_array.append((player2.index, move_2))
+
+        return move_2
 
 
     def render_games(self):
@@ -34,8 +39,8 @@ class Game:
             y.append(value)
 
         plt.title("Comparison of Algorithms") 
-        plt.xlabel("x axis caption") 
-        plt.ylabel("y axis caption") 
+        plt.xlabel("Games Played") 
+        plt.ylabel("Score") 
         plt.plot(x,y) 
         plt.show()
 
@@ -85,12 +90,14 @@ def frequency_analysis(self, game):
         if index == self.index:
             moves[str(move)] += 1
         elif index != self.index:
-            if move == 0:
-                 moves['-1'] += 1
-            elif move == 1:
+            if move == -1:
                  moves['0'] += 1
-            else:
+            elif move == 0:
                  moves['1'] += 1
+            else:
+                 moves['-1'] += 1
+
+    print(moves)
 
     return int(max(moves, key=moves.get))
 
@@ -105,7 +112,6 @@ def first_order_historical(self, game):
     moves = {'-1' : 0, '0' : 0, '1' : 1}
 
     for _, (index, move) in enumerate(game.game_array):
-        print(move, last_move)
         if (index, move) == last_move:
             if index == self.index:
                 moves[str(move)] += 1
@@ -116,8 +122,6 @@ def first_order_historical(self, game):
                     moves['0'] += 1
                 else:
                     moves['1'] += 1
-
-    print(moves)
 
     return int(max(moves, key=moves.get))
 
@@ -151,10 +155,15 @@ def nth_order_historical(self, game):
 def markov_chain(self, game):
     pass 
 
+def active_player(self, game):
+    return self.selected_move
+
 class Player:
     def __init__(self, index):
         self.index = index
+        self.selected_move = 0
 
+''' For facing Algorithms against each other
 player_1 = Player(1)
 player_1.move = types.MethodType(daniels_algorithm, player_1)
 
@@ -163,8 +172,11 @@ player_2.move = types.MethodType(naslunds_algorithm, player_2)
 
 game = Game()
 
+
 for i in range(100):
     game.round_winner(player_1, player_2)
+    pass
     
 value = game.render_games()
 print(value)
+'''
