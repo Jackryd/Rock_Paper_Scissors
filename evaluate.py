@@ -8,7 +8,9 @@ with open('text.csv', 'r') as file:
     df = pd.read_csv(file)
 
     # Grouping the data by 'tag' and summing up 'val'
-    df_sum = df.groupby('tag', as_index=False)['val'].sum()
+    df_sum = df.groupby('tag', as_index=False)[['wins', 'games']].sum()
+
+    df_sum['val'] = df_sum['wins'] / df_sum['games']
 
     # Setting the aesthetic style of the plots
     sns.set_style("whitegrid")
