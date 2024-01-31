@@ -11,8 +11,6 @@ class Game:
         move_1 = player1.move(self)
         move_2 = player2.move(self)
 
-        # print(move_1, move_2)
-
         if move_1 == move_2:
             self.game_array.append((0, move_1))
 
@@ -35,7 +33,7 @@ class Game:
             x.append(_)
             y.append(value)
 
-        plt.title("Matplotlib demo") 
+        plt.title("Comparison of Algorithms") 
         plt.xlabel("x axis caption") 
         plt.ylabel("y axis caption") 
         plt.plot(x,y) 
@@ -98,7 +96,51 @@ def frequency_analysis(self, game):
 
 
 def first_order_historical(self, game):
-    pass
+
+    if len(game.game_array) == 0:
+        return random.choice([-1, 0, 1])
+
+    last_move = game.game_array[-1]
+
+    moves = {'-1' : 0, '0' : 0, '1' : 1}
+
+    for _, (index, move) in enumerate(game.game_array):
+        print(move, last_move)
+        if (index, move) == last_move:
+            if index == self.index:
+                moves[str(move)] += 1
+            elif index != self.index:
+                if move == 0:
+                    moves['-1'] += 1
+                elif move == 1:
+                    moves['0'] += 1
+                else:
+                    moves['1'] += 1
+
+    print(moves)
+
+    return int(max(moves, key=moves.get))
+
+
+def daniels_algorithm(self, game):
+    for index, move in (game.game_array):
+        if index == 0:
+            return move
+        
+    return random.choice([-1, 0, 1])
+
+
+def naslunds_algorithm(self, game):
+    if len(game.game_array) == 0:
+        return -1
+    
+    if game.game_array[-1][0] == self.index:
+        return -1
+    elif 0 != game.game_array[-1][0] != self.index:
+        return 0
+    else:
+        return game.game_array[-1][1] + 1 if game.game_array[-1][0] < 1 else -1
+    
 
 def second_order_historical(self, game):
     pass
@@ -114,16 +156,15 @@ class Player:
         self.index = index
 
 player_1 = Player(1)
-player_1.move = types.MethodType(frequency_analysis, player_1)
+player_1.move = types.MethodType(daniels_algorithm, player_1)
 
 player_2 = Player(-1)
-player_2.move = types.MethodType(random_move, player_2)
+player_2.move = types.MethodType(naslunds_algorithm, player_2)
 
 game = Game()
 
-for i in range(1000):
+for i in range(100):
     game.round_winner(player_1, player_2)
     
 value = game.render_games()
 print(value)
-
