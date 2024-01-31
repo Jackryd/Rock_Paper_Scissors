@@ -10,7 +10,7 @@ with open('text.csv', 'r') as file:
     # Grouping the data by 'tag' and summing up 'val'
     df_sum = df.groupby('tag', as_index=False)[['wins', 'games']].sum()
 
-    df_sum['val'] = df_sum['wins'] / df_sum['games']
+    df_sum['val'] = round(100 * df_sum['wins'] / df_sum['games'], 2)
 
     # Setting the aesthetic style of the plots
     sns.set_style("whitegrid")
