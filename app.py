@@ -56,13 +56,12 @@ def render_winner_text(text, x, y, text_colour=BLACK):
     WIN.blit(text, textRect)
     pygame.display.flip()
 
-def save_score(name='', game=None, algorithm='algorithm'):
-    value = game.render_games()
-    if name == "":
-        return
-    with open('file.csv', 'a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([name, value, algorithm.__name__])
+def save_score(algorithm, game=None):
+    if game.game_array != []:
+        value = game.render_games()
+        with open('file.csv', 'a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([algorithm.__name__, value])
 
 
 def main():
@@ -72,7 +71,7 @@ def main():
     player = Player(1)
     player.move = types.MethodType(active_player, player)
     bot = Player(-1)
-    bot.move = types.MethodType(first_order_historical, bot)
+    bot.move = types.MethodType(frequency_analysis, bot)
     clock = pygame.time.Clock()
     WIN.blit(bg, (0, 0))
     game_active = False
@@ -132,7 +131,7 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 # name = input('To save, type name: ')
-                save_score(name='Jack', game=game, algorithm=bot.move)
+                save_score(algorithm=bot.move, game=game)
                 sys.exit()
 
 if __name__ == "__main__":
