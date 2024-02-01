@@ -1,11 +1,15 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import os
 import types
+import csv
 
 class Game:
     def __init__(self):
         self.game_array = []
+        _, _, files = next(os.walk("games"))
+        self.game_number = len(files)
 
     def round_winner(self, player1, player2):
         move_1 = player1.move(self)
@@ -25,6 +29,15 @@ class Game:
             self.game_array.append((player1.index, move_1))
         else:
             self.game_array.append((player2.index, move_2))
+
+        file_name = os.path.join('games', f'game{self.game_number}.csv')
+        with open(file_name, 'a', newline='') as file:
+            writer = csv.writer(file)
+
+            outcome = self.game_array[-1][0]
+            action = self.game_array[-1][1] if outcome in [0, 1] else self.game_array[-1][1] + 1 if self.game_array[-1][1] < 1 else -1
+
+            writer.writerow([outcome, action])
 
         return move_2
 
