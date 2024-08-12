@@ -1,15 +1,21 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import random
 import os
 import types
 import csv
 
+from tensorflow.keras.models import load_model
+
 class Game:
     def __init__(self):
+        # Game array saves tuples of each round. As per: (WINNING PLAYER, WINNING MOVE)
         self.game_array = []
         _, _, files = next(os.walk("games"))
-        self.game_number = len(files)
+        self.game_number = len(files) + 1
+        with open(os.path.join('games', f'game{self.game_number}.csv'), 'w') as file:
+            pass
 
     def round_winner(self, player1, player2):
         move_1 = player1.move(self)
@@ -61,6 +67,20 @@ class Game:
 
 def random_move(self, game):
     return random.choice([-1, 0, 1])
+
+def wsls(self, game):
+    if len(game.game_array) == 0:
+        return random.choice([-1, 0, 1])
+    if game.game_array[-1][0] == self.index:
+        return game.game_array[-1][1]
+    else:
+        if game.game_array[-1][1] == -1:
+            return 0
+        if game.game_array[-1][1] == 0:
+            return 1
+        else:
+            return -1
+
 
 def last_winning_move(self, game):
     if game.game_array != []:
@@ -157,16 +177,31 @@ def naslunds_algorithm(self, game):
         return 0
     else:
         return game.game_array[-1][1] + 1 if game.game_array[-1][0] < 1 else -1
-    
 
-def second_order_historical(self, game):
-    pass
+def fnn(self, game, sequence_length=5, model_name='FNN_v1.h5'):
+    # Simple fnn only designated to work as proof of principle
+    file_name = os.path.join('games', f'game{game.game_number}.csv')
+    data = pd.read_csv(file_name, header=None, names=['winner', 'player_action'])
+    data = data.apply(pd.to_numeric, errors='coerce')
+    data.dropna(inplace=True) # If earlier models fuck up, remove this line
 
-def nth_order_historical(self, game):
-    pass
+    X = np.array(data)
+    X = X[-(sequence_length + 1):-1]
+    X = X.flatten()
 
-def markov_chain(self, game):
-    pass 
+    print(X)
+
+    if X.shape[0] < sequence_length + 4:
+        print(X, 'Too short')
+        return random.choice([-1, 0, 1])
+
+    model = load_model(os.path.join('models', model_name))
+    predictions = model.predict(np.array([X]))
+
+    print(predictions)
+    print(np.where(predictions == max(predictions[0]))[0][0])
+
+    return np.where(predictions == max(predictions[0]))[0][0]
 
 def active_player(self, game):
     return self.selected_move
