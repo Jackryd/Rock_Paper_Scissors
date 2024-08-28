@@ -6,9 +6,9 @@ This repository represents my endeavour of exploring how different algorithms ca
 
 I have created a Pygame GUI which in a simple manner allows the player to play the game of rock paper scissors by chosing a move and getting a response promptly. The move which the computer plays is dependent on what algorithm the computer is currently using, something which is easily changed in the code. For every round which is played, the program saves both the winner of the round and what move that player used. It is from this data that the models infers decisions. For instance, one of the developed algorithms is called a first order historical. This algorithm looks at all previous games with similar outcomes (i.e. the same moves were played) and plays the move which would have won the subsequential game in that case. Finally, there is some code which can be used to make different algorithms face each other to decide which the **ultimate** algorithm is.
 
-![Image](images/RPS_Screenshot1.png)  
-![Image](images/RPS_Screenshot2.png)  
-![Image](images/RPS_Screenshot3.png)  
+![Image](Images/RPS_Screenshot1.png)  
+![Image](Images/RPS_Screenshot2.png)  
+![Image](Images/RPS_Screenshot3.png)  
 
 ## The *Regular* Algorithms
 
