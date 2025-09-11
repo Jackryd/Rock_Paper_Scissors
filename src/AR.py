@@ -1,3 +1,7 @@
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 class AutoregressiveModel(nn.Module):
     def __init__(self, max_seq_len=50, d_model=64, n_heads=4, n_layers=2):
@@ -6,7 +10,7 @@ class AutoregressiveModel(nn.Module):
         self.d_model = d_model
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.input_embedding = nn.Linear(9, d_model)
+        self.input_embedding = nn.Linear(6, d_model) 
         self.pos_encoding = nn.Parameter(torch.randn(max_seq_len, d_model) * 0.1)
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model, 
@@ -32,7 +36,7 @@ class AutoregressiveModel(nn.Module):
         transformed = self.transformer(x, mask=causal_mask)
         return self.output(transformed)
 
-    def encode_history(self, my_moves, opp_moves, results):
+    def encode_history(self, my_moves, opp_moves):  # Remove results parameter
         """Convert game history to model input format"""
         if len(my_moves) == 0:
             return None
@@ -41,20 +45,16 @@ class AutoregressiveModel(nn.Module):
         if len(my_moves) > self.max_seq_len:
             my_moves = my_moves[-self.max_seq_len:]
             opp_moves = opp_moves[-self.max_seq_len:]
-            results = results[-self.max_seq_len:]
         
-        # One-hot encode everything
+        # One-hot encode just the moves
         seq_len = len(my_moves)
-        encoded = torch.zeros(seq_len, 9)
+        encoded = torch.zeros(seq_len, 6)
         
         for i in range(seq_len):
-            # One-hot my move
+            # One-hot my move (positions 0-2)
             encoded[i, my_moves[i]] = 1
-            # One-hot opponent move  
+            # One-hot opponent move (positions 3-5)
             encoded[i, 3 + opp_moves[i]] = 1
-            # One-hot result (-1, 0, 1 -> 0, 1, 2)
-            result_idx = int(results[i]) + 1
-            encoded[i, 6 + result_idx] = 1
             
         return encoded.unsqueeze(0).to(self.device)
 
@@ -64,12 +64,12 @@ class AutoregressiveModel(nn.Module):
         total_loss = 0
         num_examples = 0
         
-        for my_moves, opp_moves, results in batch_data:
+        for my_moves, opp_moves in batch_data:
             if len(my_moves) < 2:
                 continue
                 
             # Encode sequence
-            input_encoded = self.encode_history(my_moves, opp_moves, results)
+            input_encoded = self.encode_history(my_moves, opp_moves)
             if input_encoded is None:
                 continue
             
@@ -136,3 +136,79 @@ class AutoregressiveModel(nn.Module):
         """Load a pre-trained model"""
         self.load_state_dict(torch.load(path, map_location=self.device))
         print(f"Model loaded from {path}")
+
+    def evaluate_model(self, test_data):
+        """Evaluate model on test data"""
+        print("Evaluating model...")
+        
+        correct_predictions = 0
+        total_predictions = 0
+        
+        self.eval()
+        with torch.no_grad():
+            for human_moves, ai_moves in test_data:
+                for i in range(1, len(human_moves)):
+                    # Use history up to position i-1 to predict move at position i
+                    history_human = human_moves[:i]
+                    history_ai = ai_moves[:i]
+                    
+                    # Encode history
+                    encoded = self.encode_history(history_human, history_ai)
+                    if encoded is not None:
+                        predicted_move = self.sample(encoded, temperature=0.1)
+                        actual_move = human_moves[i]
+                        
+                        if predicted_move == actual_move:
+                            correct_predictions += 1
+                        total_predictions += 1
+        
+        accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0
+        print(f"Test accuracy: {correct_predictions}/{total_predictions} ({accuracy:.1%})")
+        print(f"Random baseline: 33.3%")
+        print(f"Improvement over random: {accuracy/0.333:.1f}x")
+        
+        return accuracy
+
+
+def main():
+    human_moves, ai_moves = load_clean_data()
+    train_indices, test_indices = load_indices()
+    
+    train_data = prepare_training_data(human_moves, ai_moves, train_indices)
+    test_data = prepare_training_data(human_moves, ai_moves, test_indices)
+    
+    # Initialize model
+    model = AutoregressiveModel(
+        max_seq_len=50,
+        d_model=64,
+        n_heads=4,
+        n_layers=2
+    )
+    
+    print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
+    print(f"Using device: {model.device}")
+    
+    # Train
+    model.train_model(
+        training_data=train_data,
+        epochs=1000,
+        learning_rate=0.001,
+        batch_size=16
+    )
+    
+    # Save model
+    model.save_model("../models/simple_rps_model.pth")
+    
+    # Evaluate
+    accuracy = model.evaluate_model(test_data)
+    
+    # Save test data for later
+    with open("data/test_data_simple.pkl", "wb") as f:
+        pickle.dump(test_data, f)
+    
+    print(f"\nFinal test accuracy: {accuracy:.1%}")
+    
+    return model
+
+if __name__ == "__main__":
+    model = main()
