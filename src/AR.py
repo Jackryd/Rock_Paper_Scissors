@@ -2,6 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import pickle
+from data_loading import *
 
 class AutoregressiveModel(nn.Module):
     def __init__(self, max_seq_len=50, d_model=64, n_heads=4, n_layers=2):
@@ -9,7 +11,6 @@ class AutoregressiveModel(nn.Module):
         self.max_seq_len = max_seq_len
         self.d_model = d_model
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
         self.input_embedding = nn.Linear(6, d_model) 
         self.pos_encoding = nn.Parameter(torch.randn(max_seq_len, d_model) * 0.1)
         encoder_layer = nn.TransformerEncoderLayer(
@@ -21,13 +22,11 @@ class AutoregressiveModel(nn.Module):
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
         self.output = nn.Linear(d_model, 3)
         self.to(self.device)
-
     def _generate_causal_mask(self, seq_len):
         """Generate causal mask to prevent looking at future positions"""
         mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1)
         mask = mask.masked_fill(mask == 1, float('-inf'))
         return mask
-    
     def forward(self, x):
         batch_size, seq_len = x.size(0), x.size(1)
         x = self.input_embedding(x)
@@ -35,27 +34,20 @@ class AutoregressiveModel(nn.Module):
         causal_mask = self._generate_causal_mask(seq_len).to(x.device)
         transformed = self.transformer(x, mask=causal_mask)
         return self.output(transformed)
-
     def encode_history(self, my_moves, opp_moves):  # Remove results parameter
         """Convert game history to model input format"""
         if len(my_moves) == 0:
             return None
-            
         # Limit sequence length
         if len(my_moves) > self.max_seq_len:
             my_moves = my_moves[-self.max_seq_len:]
             opp_moves = opp_moves[-self.max_seq_len:]
-        
         # One-hot encode just the moves
         seq_len = len(my_moves)
         encoded = torch.zeros(seq_len, 6)
-        
         for i in range(seq_len):
-            # One-hot my move (positions 0-2)
-            encoded[i, my_moves[i]] = 1
-            # One-hot opponent move (positions 3-5)
-            encoded[i, 3 + opp_moves[i]] = 1
-            
+            encoded[i, int(my_moves[i])] = 1
+            encoded[i, 3 + int(opp_moves[i])] = 1
         return encoded.unsqueeze(0).to(self.device)
 
     def train_step(self, batch_data, optimizer, criterion):
@@ -80,7 +72,7 @@ class AutoregressiveModel(nn.Module):
             # Create targets: predict moves 1,2,3... from history 0,1,2...
             seq_len = len(my_moves)
             if seq_len > 1:
-                targets = torch.tensor(my_moves[1:]).to(self.device)
+                targets = torch.tensor(opp_moves[1:]).to(self.device)
                 predictions = logits[0, :-1, :]  # Skip last prediction (no target)
                 
                 loss = criterion(predictions, targets)
@@ -191,13 +183,13 @@ def main():
     # Train
     model.train_model(
         training_data=train_data,
-        epochs=1000,
+        epochs=100,
         learning_rate=0.001,
         batch_size=16
     )
     
     # Save model
-    model.save_model("../models/simple_rps_model.pth")
+    model.save_model("../models/simple_100epoch_rps_model.pth")
     
     # Evaluate
     accuracy = model.evaluate_model(test_data)
